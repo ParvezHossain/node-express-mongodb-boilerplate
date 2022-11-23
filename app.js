@@ -1,5 +1,13 @@
 const express = require("express");
+const cors = require("cors")
+const morgan = require("morgan")
+const SwaggerUI = require("swagger-ui-express")
+const YAML = require("yamljs")
+// const SwaggerJsDoc = require("swagger-jsdoc")
+const SwaggerJsDoc = YAML.load("./api.yaml")
+
 const app = express();
+app.use("/api-docs", SwaggerUI.serve, SwaggerUI.setup(SwaggerJsDoc))
 
 const tasks = require("./routes/routes");
 const user = require("./routes/main");
@@ -15,10 +23,12 @@ require("dotenv").config();
 // middleware
 
 app.use(express.json());
+app.use(cors())
+app.use(morgan("dev"))
 
 // routes
 
-app.get("/", (req, res, next) => {
+app.get("/api/v1/", (req, res, next) => {
   res.send("hello client");
 });
 

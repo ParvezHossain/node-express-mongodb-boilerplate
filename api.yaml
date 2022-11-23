@@ -1,0 +1,87 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  description: Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.
+  version: 0.1.9
+servers:
+  - url: http://localhost:3000/api/v1/
+    description: Optional server description, e.g. Main (production) server
+  - url: http://192.168.0.106:3000/api/v1/
+    description: Optional server description, e.g. Internal staging server for testing
+
+paths:
+  /:
+    get:
+      summary: Greeting from node-app
+      responses:
+        '200':
+          description: OK
+  /user/register:
+    post:
+      summary: Register a new user.
+      description: Optional extended description in CommonMark or HTML.
+      requestBody:
+        required: true
+        content:
+            application/json:
+              schema: 
+                type: object
+                properties:
+                  username:
+                    type: string
+                    required: true
+                    minimum: 5
+                    maximum: 50
+                  email:
+                    type: string
+                    required: true
+                    minimum: 5
+                    maximum: 255
+                  password:
+                    type: string
+                    required: true
+                    minimum: 5
+                    maximum: 1024
+  
+      responses:
+        '200':    # status code
+          description: A JSON array of user information      
+  
+  /user/login:
+    post:
+      summary: Login to create event(s)
+      description: Dummy description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+
+      responses:
+        '200':
+          description: Login 
+
+  /tasks:
+    post:
+      summary: Create new task
+      description: Create a new task to assign for user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                completed:
+                  type: boolen
+      responses:
+        '200':
+          description: New task created

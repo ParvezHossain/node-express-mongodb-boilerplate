@@ -1,0 +1,29 @@
+// GET random data
+
+curl -X 'GET' \
+  'http://localhost:3000/api/v1/' \
+  -H 'accept: */*'
+
+// register a new user
+
+curl -X 'POST' \
+  'http://localhost:3000/api/v1/user/register' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "username": "string",
+  "email": "string@gmail.com",
+  "password": "string"
+}'
+
+
+// login
+
+curl -X 'POST' \
+  'http://localhost:3000/api/v1/user/login' \
+  -H 'accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "username": "phossain",
+  "password": "123456789"
+}'
