@@ -11,7 +11,7 @@ const {
 
 const authenticationMiddleware = require("../middleware/auth");
 
-router.route("/").get(authenticationMiddleware, getAllTasks).post(createTask);
+router.route("/").get(authenticationMiddleware, getAllTasks).post(authenticationMiddleware, createTask);
 router.route("/:id").get(getTask).patch(updateTask).delete(deleteTask);
 
 module.exports = router;

@@ -8,7 +8,17 @@ servers:
     description: Optional server description, e.g. Main (production) server
   - url: http://192.168.0.106:3000/api/v1/
     description: Optional server description, e.g. Internal staging server for testing
-
+schemes:
+  - http
+  - https
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT # optional, for documentation purpose only
+security:
+  - bearerAuth: []
 paths:
   /:
     get:
@@ -71,6 +81,8 @@ paths:
     post:
       summary: Create new task
       description: Create a new task to assign for user
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -81,7 +93,7 @@ paths:
                 name:
                   type: string
                 completed:
-                  type: boolen
+                  type: boolean
       responses:
         '200':
           description: New task created
