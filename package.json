@@ -2,9 +2,9 @@
   "name": "node-express-mongo",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -22,6 +22,8 @@
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
     "express-async-errors": "^3.1.1",
+    "express-rate-limit": "^6.7.0",
+    "express-winston": "^4.2.0",
     "http-status-codes": "^2.2.0",
     "joi": "^17.6.0",
     "jsonwebtoken": "^8.5.1",
@@ -30,12 +32,16 @@
     "mongoose": "^6.3.1",
     "morgan": "^1.10.0",
     "nanoid": "^4.0.0",
+    "redis": "^4.5.1",
     "socket.io": "^4.5.4",
     "swagger-jsdoc": "^6.2.5",
     "swagger-ui-express": "^4.6.0",
+    "winston": "^3.8.2",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "jest": "^29.3.1",
+    "nodemon": "^2.0.20",
+    "supertest": "^6.3.3"
   }
 }

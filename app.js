@@ -6,10 +6,80 @@ const morgan = require("morgan")
 const SwaggerUI = require("swagger-ui-express")
 const YAML = require("yamljs")
 const moment = require("moment")
+
+
+// API rate limiter
+const rateLimit = require("express-rate-limit");
+
 // const SwaggerJsDoc = require("swagger-jsdoc")
 const SwaggerJsDoc = YAML.load("./api.yaml")
 
+// Request logger
+morgan('tiny')
+morgan(':method :url :status :res[content-length] - :response-time ms')
+
+morgan(function (tokens, req, res) {
+  return [
+    tokens.method(req, res),
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens.res(req, res, 'content-length'), '-',
+    tokens['response-time'](req, res), 'ms'
+  ].join(' ')
+})
+
+// LOGGER
+// https://betterstack.com/community/guides/logging/log-levels-explained/
+const winston = require('winston');
+const { combine, timestamp, json, printf, colorize, align } = winston.format;
+
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || 'info',
+  format: combine(
+    colorize({ all: true }),
+    timestamp({
+      format: 'YYYY-MM-DD hh:mm:ss.SSS A',
+    }),
+    json(),
+    align(),
+    printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}`)
+  ),
+  // transports: [new winston.transports.Console()],
+  transports: [
+    new winston.transports.File({
+      filename: "combined.log"
+    })
+  ]
+});
+
+logger.info('Info message');
+logger.error('Error message');
+logger.warn('Warning message');
+
+
+// Node  express Server
+
 const app = express();
+/* 
+
+FIXME: allowList does not work, give it a look
+
+*/
+const allowlist = ['192.168.0.106', '192.168.0.21']
+const apiLimiter = {
+  windowMs: 60 * 1000,
+  max: 2,
+  skip: (request, response) => allowlist.includes(request.ip),
+  message: 'Too many accounts created from this IP, please try again after one minute',
+  headers: true,
+  requestWasSuccessful: (request, response) => response.statusCode < 400,
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+}
+
+// This config will work for all end-point // max 2 requests 
+// app.use(rateLimit(apiLimiter))
+
 const httpServer = createServer(app);
 // console.log("Server", httpServer);
 
@@ -35,10 +105,14 @@ app.use(cors())
 app.use(morgan("dev"))
 
 // routes
-
-app.get("/api/v1/", (req, res, next) => {
-  res.send("hello client");
+// this end-point will only handle max 2 request tin given time
+app.get("/api/v1/", rateLimit(apiLimiter), (req, res, next) => {
+  res.json({
+    message: "hello client",
+    statusCode: 200
+  });
 });
+
 
 app.use("/api/v1/tasks", tasks);
 app.use("/api/v1/user", user);
@@ -99,4 +173,7 @@ const start = async () => {
   }
 };
 
-start();
+module.exports = {
+  start, 
+  app
+}
