@@ -114,6 +114,13 @@ app.get("/api/v1/", rateLimit(apiLimiter), (req, res, next) => {
 });
 
 
+app.get("/", (req, res) => {
+  res.json({
+    message: "Hello From Docker.",
+    statusCode: 200
+  });
+})
+
 app.use("/api/v1/tasks", tasks);
 app.use("/api/v1/user", user);
 
