@@ -44,7 +44,11 @@ never use bind mount volume in production docker image, if you really want to us
 
 
 
-// Docker Composer
+// Docker Composer 
 // docker-compose up -d
 // docker-compose up -d --build
 // docker-compose down -v
+
+// docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+// docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v

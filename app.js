@@ -6,7 +6,7 @@ const morgan = require("morgan")
 const SwaggerUI = require("swagger-ui-express")
 const YAML = require("yamljs")
 const moment = require("moment")
-
+require('dotenv').config()
 const axios = require("axios")
 
 // Helmet for express security
@@ -17,19 +17,17 @@ const redis = require("redis");
 let redisClient;
 
 (async() => {
-  redisClient = redis.createClient({
-    host: "127.0.0.1",
+  /* redisClient = redis.createClient({
+    host: "localhost",
     port: 6379,
     legacyMode: true 
-  })
+  }) */
+  redisClient = redis.createClient(6379)
   redisClient.on("error", (err) => {
     console.error("Error", err);
   })
-  // 
   await redisClient.connect()
 })()
-
-redisClient.set("framework", "express")
 
 // API rate limiter
 const rateLimit = require("express-rate-limit");
