@@ -7,6 +7,9 @@ const SwaggerUI = require("swagger-ui-express")
 const YAML = require("yamljs")
 const moment = require("moment")
 
+// Helmet for express security
+const helmet = require("helmet")
+
 
 // API rate limiter
 const rateLimit = require("express-rate-limit");
@@ -59,7 +62,16 @@ logger.warn('Warning message');
 
 // Node  express Server
 
+const helmetOptions = {
+  referrerPolicy: {
+    policy: "no-referrer",
+    contentSecurityPolicy: false,
+
+  }
+}
+
 const app = express();
+app.use(helmet(helmetOptions))
 /* 
 
 FIXME: allowList does not work, give it a look
@@ -115,9 +127,10 @@ app.get("/api/v1/", rateLimit(apiLimiter), (req, res, next) => {
 
 
 app.get("/", (req, res) => {
+  console.log("PORT:", PORT);
   res.json({
     message: "Hello From Docker.",
-    statusCode: 200
+    statusCode: PORT
   });
 })
 
