@@ -7,9 +7,29 @@ const SwaggerUI = require("swagger-ui-express")
 const YAML = require("yamljs")
 const moment = require("moment")
 
+const axios = require("axios")
+
 // Helmet for express security
 const helmet = require("helmet")
 
+// redis
+const redis = require("redis");
+let redisClient;
+
+(async() => {
+  redisClient = redis.createClient({
+    host: "127.0.0.1",
+    port: 6379,
+    legacyMode: true 
+  })
+  redisClient.on("error", (err) => {
+    console.error("Error", err);
+  })
+  // 
+  await redisClient.connect()
+})()
+
+redisClient.set("framework", "express")
 
 // API rate limiter
 const rateLimit = require("express-rate-limit");
@@ -106,7 +126,7 @@ const notFound = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
 // database connection
-const connectDB = require("./db/connect");
+const connectDB = require("./db/connect"); 
 
 require("dotenv").config();
 
@@ -125,6 +145,47 @@ app.get("/api/v1/", rateLimit(apiLimiter), (req, res, next) => {
   });
 });
 
+async function fetchData (id){
+  id = 1
+  const apiResponse = await axios.get(`https://jsonplaceholder.typicode.com/todos/${id}`)
+  return apiResponse.data
+}
+
+app.get("/redis", async (req, res) => {
+
+  // let id = req.params.id
+  // console.log("data id", id);
+  let id = "framework"
+  let result;
+  let isCached = false;
+  try {
+
+    /* 
+    FIXME:
+    data is not returning from the redis client
+    */
+
+    const cachedResult = await redisClient.get(id)
+    console.log("cachedResult", cachedResult);
+    if (cachedResult) {
+      isCached = true
+      result = JSON.parse(cachedResult)
+    }else{
+      result = await fetchData(id)
+      if (result.length) {
+        throw "API return an empty array"
+      }
+      await redisClient.set(id, JSON.stringify(result))
+    }
+
+    res.send ({
+      fromCache: isCached,
+      data: result
+    })
+  } catch (error) {
+    console.error(" err log : ", error);
+  }
+})
 
 app.get("/", (req, res) => {
   console.log("PORT:", PORT);
