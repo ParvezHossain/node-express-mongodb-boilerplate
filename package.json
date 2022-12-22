@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "NODE_ENV=${NODE_ENV:=production} node server.js && echo $NODE_ENV",
     "dev": "nodemon server.js",
     "test": "jest"
   },
@@ -22,7 +22,7 @@
     "axios": "^1.2.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.0.3",
     "express": "^4.17.3",
     "express-async-errors": "^3.1.1",
     "express-rate-limit": "^6.7.0",

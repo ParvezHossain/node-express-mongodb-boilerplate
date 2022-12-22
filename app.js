@@ -6,7 +6,7 @@ const morgan = require("morgan")
 const SwaggerUI = require("swagger-ui-express")
 const YAML = require("yamljs")
 const moment = require("moment")
-
+require('dotenv').config()
 const axios = require("axios")
 
 // Helmet for express security
@@ -15,21 +15,26 @@ const helmet = require("helmet")
 // redis
 const redis = require("redis");
 let redisClient;
-
+console.log("redis host", process.env.REDIS_HOST);
 (async() => {
-  redisClient = redis.createClient({
+  /* redisClient = redis.createClient({
     host: "127.0.0.1",
-    port: 6379,
+    port: process.env.REDIS_PORT || 6379,
+    retry_strategy: options => Math.max(options.attempt * 100, 3000),
     legacyMode: true 
+  }) */
+  redisClient = redis.createClient({
+    legacyMode: true,
+    socket: {
+        port: process.env.REDID_PORT || 6379,
+        host: process.env.REDID_HOST || "127.0.0.1",
+    }
   })
   redisClient.on("error", (err) => {
     console.error("Error", err);
   })
-  // 
   await redisClient.connect()
 })()
-
-redisClient.set("framework", "express")
 
 // API rate limiter
 const rateLimit = require("express-rate-limit");
@@ -145,34 +150,32 @@ app.get("/api/v1/", rateLimit(apiLimiter), (req, res, next) => {
   });
 });
 
-async function fetchData (id){
+async function fetchData (id = 1){
   id = 1
-  const apiResponse = await axios.get(`https://jsonplaceholder.typicode.com/todos/${id}`)
+  const url = "https://jsonplaceholder.typicode.com/posts/";
+  // const url  = `https://jsonplaceholder.typicode.com/todos/${id}`;
+  const apiResponse = await axios.get(url, {headers: {
+    "Accept-Encoding": "gzip, deflate, compress"
+  }})
+  console.log(apiResponse.data);
   return apiResponse.data
-}
+} 
 
 app.get("/redis", async (req, res) => {
 
   // let id = req.params.id
   // console.log("data id", id);
-  let id = "framework"
+  let id = "photos"
   let result;
   let isCached = false;
   try {
-
-    /* 
-    FIXME:
-    data is not returning from the redis client
-    */
-
     const cachedResult = await redisClient.get(id)
-    console.log("cachedResult", cachedResult);
     if (cachedResult) {
       isCached = true
       result = JSON.parse(cachedResult)
     }else{
       result = await fetchData(id)
-      if (result.length) {
+      if (result.length == 0) {
         throw "API return an empty array"
       }
       await redisClient.set(id, JSON.stringify(result))

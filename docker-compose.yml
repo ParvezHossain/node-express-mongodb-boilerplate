@@ -2,12 +2,29 @@ version: '3'
 services:
   node-app:
     build: .
+    container_name: my-node-app
     ports:
       - "3000:3000"
-    volumes:
-      - ./:/app:ro
-      - /app/node_modules
     environment:
       - PORT=3000
-    # env_file:
-    #   - ./.env
+  redis:
+    image: redis
+    container_name: my-redis
+    # restart: unless-stopped
+    # network_mode: bridge
+    ports:
+      - "6379:6379"
+    expose:
+      - 6379
+  
+  mongo:
+    image: mongo:4.4.6
+    container_name: mongo_app
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo-db:/data/db #it will persist data in local data/db folder
+
+volumes:
+  mongo-db:
