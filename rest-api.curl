@@ -11,6 +11,7 @@ curl -X 'POST' \
   -H 'accept: */*' \
   -H 'Content-Type: application/json' \
   -d '{
+  "name": "string",
   "username": "string",
   "email": "string@gmail.com",
   "password": "string"
