@@ -51,7 +51,7 @@ const login = asyncWrapper(async (req, res, next) => {
   const token = jwt.sign(payload, JWT_SECRET_KEY, {
     expiresIn: "1h",
   });
-  res.status(200).json({ userId: user.id, token, tokenExpiration: 1 });
+  res.status(200).json({ userId: user.id, username: user.username, name: user.name, token, tokenExpiration: 1 });
 });
 
 module.exports = {
