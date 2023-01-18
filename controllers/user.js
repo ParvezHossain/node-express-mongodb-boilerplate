@@ -16,6 +16,9 @@ const validate = (userInfo) => {
 };
 
 const createUser = asyncWrapper(async (req, res) => {
+  // FIXME: Currently this is hard coded from the frontend perspective, need to give a look
+  req.body.role = "admin";
+
   const { error } = validateUser(req.body);
   if (error) {
     return res.status(400).send(error.details[0].message);
@@ -47,11 +50,12 @@ const login = asyncWrapper(async (req, res, next) => {
   const payload = {
     userId: user.userId,
     email: user.email,
+    role: user.role,
   };
   const token = jwt.sign(payload, JWT_SECRET_KEY, {
     expiresIn: "1h",
   });
-  res.status(200).json({ userId: user.id, username: user.username, name: user.name, token, tokenExpiration: 1 });
+  res.status(200).json({ userId: user.id, username: user.username, name: user.name, token, tokenExpiration: 1, statusCode: 200, message: "Login Successful" });
 });
 
 module.exports = {
