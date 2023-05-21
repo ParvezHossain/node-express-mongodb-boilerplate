@@ -1,206 +1,109 @@
+// server.js
+
+/* Dependencies
+express: Fast, unopinionated, minimalist web framework for Node.js.
+http: Built-in Node.js module for creating HTTP servers.
+cors: Middleware to enable Cross-Origin Resource Sharing (CORS) for handling requests from different origins.
+morgan: HTTP request logger middleware for Node.js.
+helmet: Middleware to enhance the security of Express applications by setting various HTTP headers.
+express-rate-limit: Middleware to limit repeated requests to public APIs and/or endpoints.
+swagger-ui-express: Middleware to serve Swagger UI for visualizing and interacting with API documentation.
+yamljs: A library to parse YAML files.
+socket.io: Library for enabling real-time, bidirectional communication between clients and the server using web sockets.
+winston: A versatile logging library for Node.js.
+moment: A library for parsing, manipulating, and formatting dates and times.
+
+Modules and Middleware
+
+tasks: Module that handles routes related to tasks.
+user: Module that handles routes related to users.
+notFound: Middleware to handle requests for non-existent routes.
+errorHandlerMiddleware: Middleware to handle errors and send appropriate responses.
+connectDB: Module responsible for connecting to the database.
+startRedis: Function to start the Redis client.
+
+Server Setup
+
+Creates an instance of the Express application.
+Creates an HTTP server using createServer from the http module.
+Creates an instance of the Socket.IO server using Server from the socket.io module.
+Configures Express middleware:
+helmet: Enhances the security of the application by setting various HTTP headers.
+express.json(): Parses incoming JSON payloads.
+cors: Enables Cross-Origin Resource Sharing (CORS) for handling requests from different origins.
+morgan: Logs HTTP requests to the console.
+Sets up rate limiting for API requests using express-rate-limit.
+Mounts the Swagger UI middleware to serve the API documentation.
+Mounts the tasks and user modules to handle specific routes.
+Mounts the notFound middleware to handle requests for non-existent routes.
+Mounts the errorHandlerMiddleware middleware to handle errors.
+
+Socket.IO Setup
+
+Defines an array connectedSocketUsers to store the IDs of connected socket clients.
+Handles socket connection events (connection, disconnect, emit_event) and emits events to clients.
+
+Server Start
+
+Connects to the database using the connectDB module.
+Starts the Redis client using the startRedis function.
+Starts the HTTP server and listens on the specified port.
+Please note that the code provided is a simplified overview, and there may be additional configuration or functionality specific to your application in other files.
+
+ */
+
+
 const express = require("express");
-const { createServer } = require("http")
-const { Server } = require("socket.io")
-const cors = require("cors")
-const morgan = require("morgan")
-const SwaggerUI = require("swagger-ui-express")
-const YAML = require("yamljs")
-const moment = require("moment")
-require('dotenv').config()
-const axios = require("axios")
-
-// Helmet for express security
-const helmet = require("helmet")
-
-// redis
-const redis = require("redis");
-let redisClient;
-console.log("redis host", process.env.REDIS_HOST);
-(async() => {
-  /* redisClient = redis.createClient({
-    host: "127.0.0.1",
-    port: process.env.REDIS_PORT || 6379,
-    retry_strategy: options => Math.max(options.attempt * 100, 3000),
-    legacyMode: true 
-  }) */
-  redisClient = redis.createClient({
-    legacyMode: true,
-    socket: {
-        port: process.env.REDID_PORT || 6379,
-        host: process.env.REDID_HOST || "127.0.0.1",
-    }
-  })
-  redisClient.on("error", (err) => {
-    console.error("Error", err);
-  })
-  await redisClient.connect()
-})()
-
-// API rate limiter
+const { createServer } = require("http");
+const cors = require("cors");
+const morgan = require("morgan");
+const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
+const SwaggerUI = require("swagger-ui-express");
+const YAML = require("yamljs");
+const { Server } = require("socket.io");
+const winston = require("winston");
+const moment = require("moment");
+const tasks = require("./routes/routes");
+const user = require("./routes/main");
+const notFound = require("./middleware/not-found");
+const errorHandlerMiddleware = require("./middleware/error-handler");
+const connectDB = require("./db/connect");
+const { startRedis } = require("./helpers/redis");
 
-// const SwaggerJsDoc = require("swagger-jsdoc")
-const SwaggerJsDoc = YAML.load("./api.yaml")
-
-// Request logger
-morgan('tiny')
-morgan(':method :url :status :res[content-length] - :response-time ms')
-
-morgan(function (tokens, req, res) {
-  return [
-    tokens.method(req, res),
-    tokens.url(req, res),
-    tokens.status(req, res),
-    tokens.res(req, res, 'content-length'), '-',
-    tokens['response-time'](req, res), 'ms'
-  ].join(' ')
-})
-
-// LOGGER
-// https://betterstack.com/community/guides/logging/log-levels-explained/
-const winston = require('winston');
-const { combine, timestamp, json, printf, colorize, align } = winston.format;
-
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: combine(
-    colorize({ all: true }),
-    timestamp({
-      format: 'YYYY-MM-DD hh:mm:ss.SSS A',
-    }),
-    json(),
-    align(),
-    printf((info) => `[${info.timestamp}] ${info.level}: ${info.message}`)
-  ),
-  // transports: [new winston.transports.Console()],
-  transports: [
-    new winston.transports.File({
-      filename: "combined.log"
-    })
-  ]
-});
-
-logger.info('Info message');
-logger.error('Error message');
-logger.warn('Warning message');
-
-
-// Node  express Server
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {});
 
 const helmetOptions = {
   referrerPolicy: {
     policy: "no-referrer",
     contentSecurityPolicy: false,
+  },
+};
 
-  }
-}
+app.use(helmet(helmetOptions));
+app.use(express.json());
+app.use(cors());
+app.use(morgan("dev"));
 
-const app = express();
-app.use(helmet(helmetOptions))
-/* 
-
-FIXME: allowList does not work, give it a look
-
-*/
-const allowlist = ['192.168.0.106', '192.168.0.21']
+// API rate limiter
+const allowlist = ["192.168.0.106", "192.168.0.21"];
 const apiLimiter = {
   windowMs: 60 * 1000,
   max: 2,
   skip: (request, response) => allowlist.includes(request.ip),
-  message: 'Too many accounts created from this IP, please try again after one minute',
+  message: "Too many accounts created from this IP, please try again after one minute",
   headers: true,
   requestWasSuccessful: (request, response) => response.statusCode < 400,
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-}
+  standardHeaders: true, 
+  legacyHeaders: false, 
+};
 
-// This config will work for all end-point // max 2 requests 
-// app.use(rateLimit(apiLimiter))
-
-const httpServer = createServer(app);
-// console.log("Server", httpServer);
-
-const io = new Server(httpServer, {})
-
-app.use("/api-docs", SwaggerUI.serve, SwaggerUI.setup(SwaggerJsDoc))
-
-const tasks = require("./routes/routes");
-const user = require("./routes/main");
-
-const notFound = require("./middleware/not-found");
-const errorHandlerMiddleware = require("./middleware/error-handler");
-
-// database connection
-const connectDB = require("./db/connect"); 
-
-require("dotenv").config();
-
-// middleware
-
-app.use(express.json());
-app.use(cors())
-app.use(morgan("dev"))
-
-// routes
-// this end-point will only handle max 2 request tin given time
-app.get("/api/v1/", rateLimit(apiLimiter), (req, res, next) => {
-  res.json({
-    message: "hello client",
-    statusCode: 200
-  });
-});
-
-async function fetchData (id = 1){
-  id = 1
-  const url = "https://jsonplaceholder.typicode.com/posts/";
-  // const url  = `https://jsonplaceholder.typicode.com/todos/${id}`;
-  const apiResponse = await axios.get(url, {headers: {
-    "Accept-Encoding": "gzip, deflate, compress"
-  }})
-  console.log(apiResponse.data);
-  return apiResponse.data
-} 
-
-app.get("/redis", async (req, res) => {
-
-  // let id = req.params.id
-  // console.log("data id", id);
-  let id = "photos"
-  let result;
-  let isCached = false;
-  try {
-    const cachedResult = await redisClient.get(id)
-    if (cachedResult) {
-      isCached = true
-      result = JSON.parse(cachedResult)
-    }else{
-      result = await fetchData(id)
-      if (result.length == 0) {
-        throw "API return an empty array"
-      }
-      await redisClient.set(id, JSON.stringify(result))
-    }
-
-    res.send ({
-      fromCache: isCached,
-      data: result
-    })
-  } catch (error) {
-    console.error(" err log : ", error);
-  }
-})
-
-app.get("/", (req, res) => {
-  console.log("PORT:", PORT);
-  res.json({
-    message: "Hello From Docker.",
-    statusCode: PORT
-  });
-})
-
+// app.use(rateLimit(apiLimiter));
+app.use("/api-docs", SwaggerUI.serve, SwaggerUI.setup(YAML.load("./api.yaml")));
 app.use("/api/v1/tasks", tasks);
 app.use("/api/v1/user", user);
-
 app.use(notFound);
 app.use(errorHandlerMiddleware);
 
@@ -211,25 +114,22 @@ const connectedSocketUsers = [];
 
 io.on("connection", (socket) => {
   console.log("new client Connected", socket);
-  connectedSocketUsers.push(socket.id)
+  connectedSocketUsers.push(socket.id);
   console.log(connectedSocketUsers);
 
-  socket.on("disconnect", function(){
+  socket.on("disconnect", function () {
     console.log("Client Disconeccted");
-  })
-  socket.on("emit_event", function(data){
+  });
+  socket.on("emit_event", function (data) {
     console.log("Event data:", data);
-  })
+  });
   setInterval(() => {
-    // socket.emit("event_from_server", `${moment().format("LLLL")}`)
-    socket.emit("event_from_server", `${moment().format()}`)
+    socket.emit("event_from_server", moment().format());
   }, 500);
-})
+});
 
 io.emit("new_message", "Hello There");
 
-
-// This is to allow the for CORS from client socket
 httpServer.prependListener("request", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 });
@@ -237,18 +137,11 @@ httpServer.prependListener("request", (req, res) => {
 const start = async () => {
   try {
     await connectDB(
-      `mongodb+srv://lazyengineer:${encodeURIComponent(
-        MONGO_PASSWORD,
-      )}@cluster0.qqu8g.mongodb.net/graphql-mongo-react-app?retryWrites=true&w=majority`,
+      `mongodb+srv://lazyengineer:${encodeURIComponent(MONGO_PASSWORD)}@cluster0.qqu8g.mongodb.net/graphql-mongo-react-app?retryWrites=true&w=majority`
     );
 
-    // connection without socket
+    await startRedis();
 
-    // app.listen(PORT, () => {
-    //   console.log("Connected to mongodb and listening to port:", PORT);
-    // });
-
-    //connection With Socket
     httpServer.listen(PORT, () => {
       console.log("Connected to mongodb and listening to port:", PORT);
     });
@@ -257,7 +150,4 @@ const start = async () => {
   }
 };
 
-module.exports = {
-  start, 
-  app
-}
+start();
