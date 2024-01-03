@@ -69,7 +69,7 @@ const user = require("./routes/main");
 const notFound = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 const connectDB = require("./db/connect");
-const { startRedis } = require("./redis");
+const { startRedis } = require("redis");
 
 const app = express();
 const httpServer = createServer(app);
