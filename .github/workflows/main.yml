@@ -33,4 +33,4 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        # ssh sct@192.168.1.59 "cd /var/www/github-action/node-express-mongodb-boilerplate && git pull"
+        ssh sct@192.168.1.59 "cd /var/www/github-action/node-express-mongodb-boilerplate && git pull"
