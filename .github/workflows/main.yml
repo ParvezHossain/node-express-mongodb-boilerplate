@@ -28,9 +28,20 @@ jobs:
     needs: build
     steps:
     - name: Copy repository to server
+      # run: |
+      #   echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+      #   chmod 600 ~/.ssh/id_rsa
+      #   ssh -o StrictHostKeyChecking=no sct@192.168.1.59
+      #   ssh -v sct@192.168.1.59 "cd /var/www/github-action/node-express-mongodb-boilerplate && git pull
       run: |
-        # Add your commands to copy the repository to your server
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh sct@192.168.1.59 "cd /var/www/github-action/node-express-mongodb-boilerplate && git pull"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+          
+          SERVER_USER=sct
+          SERVER_IP=192.168.1.59
+          SERVER_PATH=/var/www/github-action/node-express-mongodb-boilerplate
+
+          # Connect to the server
+          ssh -v $SSH_OPTIONS $SERVER_USER@$SERVER_IP "cd $SERVER_PATH && git pull origin"
