@@ -7,12 +7,17 @@ on:
 
 jobs:
   deploy:
-    name: Upload to the linux server
+    name: Upload to the Linux server
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Deploy to local server
       run: |
