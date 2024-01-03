@@ -27,7 +27,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - name: Copy repository to server
-      run: |
+      - name: Copy SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+          
+      - name: Deploy to server
+        run: |
+          SERVER_USER=user
+          SERVER_IP=your_server_ip
           SERVER_PATH=/var/www/github-action/node-express-mongodb-boilerplate
-          ssh -v sct@$192.168.1.59 "cd $SERVER_PATH && git pull"
+
+          # SSH configuration options
+          SSH_OPTIONS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+          # Connect to the server and pull the latest changes
+          ssh $SSH_OPTIONS $SERVER_USER@$SERVER_IP "cd $SERVER_PATH && git pull origin main"
+          

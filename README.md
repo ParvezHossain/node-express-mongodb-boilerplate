@@ -3,5 +3,3 @@
 - The entry point of this project is app.js. 
 
 - http://localhost:3000/api-docs/#/ in this location, the doc is available
-
-- Test
