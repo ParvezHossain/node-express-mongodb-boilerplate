@@ -34,6 +34,7 @@ jobs:
       #   ssh -o StrictHostKeyChecking=no sct@192.168.1.59
       #   ssh -v sct@192.168.1.59 "cd /var/www/github-action/node-express-mongodb-boilerplate && git pull
       run: |
+          mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
