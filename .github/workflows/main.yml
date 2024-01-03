@@ -1,0 +1,19 @@
+name: Deploy to Local Server
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Upload to the linux server
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to local server
+      run: |
+        ssh sct@192.168.1.59 "cd /var/www/github-action/node-express-mongodb-boilerplate && git pull"
