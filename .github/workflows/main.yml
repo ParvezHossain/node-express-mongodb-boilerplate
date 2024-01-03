@@ -30,9 +30,4 @@ jobs:
     - name: Copy repository to server
       run: |
           SERVER_PATH=/var/www/github-action/node-express-mongodb-boilerplate
-
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
           ssh -v sct@$192.168.1.59 "cd $SERVER_PATH && git pull"
