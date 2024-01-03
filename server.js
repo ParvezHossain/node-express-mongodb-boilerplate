@@ -69,7 +69,7 @@ const user = require("./routes/main");
 const notFound = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 const connectDB = require("./db/connect");
-const { startRedis } = require("redis");
+// const { startRedis } = require("redis");
 
 const app = express();
 const httpServer = createServer(app);
@@ -140,7 +140,7 @@ const start = async () => {
       `mongodb+srv://lazyengineer:${encodeURIComponent(MONGO_PASSWORD)}@cluster0.qqu8g.mongodb.net/graphql-mongo-react-app?retryWrites=true&w=majority`
     );
 
-    await startRedis();
+    // await startRedis();
 
     httpServer.listen(PORT, () => {
       console.log("Connected to mongodb and listening to port:", PORT);
